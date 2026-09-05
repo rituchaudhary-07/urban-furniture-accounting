@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+
+{% block title %}Urban Furniture Accounting — Enterprise ERP & Landing Portal{% endblock %}
+
+{% block content %}
+<!-- Top Landing Header & Navigation -->
+<header class="landing-header">
+    <div class="landing-nav-container">
+        <a href="#home" class="landing-logo">
+            <i class="fa-solid fa-couch"></i>
+            <span>Urban Furniture</span>
+        </a>
+        <ul class="landing-nav-menu">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="switchAuthTab('login'); document.getElementById('auth-card-section').scrollIntoView({behavior: 'smooth'});">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </button>
+            <button class="btn btn-sm btn-success" onclick="switchAuthTab('register'); document.getElementById('auth-card-section').scrollIntoView({behavior: 'smooth'});">
+                <i class="fa-solid fa-user-plus"></i> Register
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Main Split Screen Landing & Authentication Section -->
+<div id="home" class="landing-split-container">
+    <!-- Left Column: Platform Introduction & Feature Showcase -->
+    <div class="landing-intro-col">
+        <div class="intro-badge">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>ACCOUNTING & ENTERPRISE RESOURCE SYSTEM</span>
+        </div>
+
+        <h1 class="landing-headline">
+            Manage Your Furniture Business <span class="text-gradient">Smarter</span>
+        </h1>
+
+        <p class="landing-description">
+            Urban Furniture is a complete accounting and business management platform designed specifically for furniture manufacturers, wholesalers, and retailers. Control procurement, sales, double-entry general ledgers, live budgets, and customer payments seamlessly.
+        </p>
+
+        <!-- 6 Feature Cards Grid -->
+        <div id="features" class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon indigo"><i class="fa-solid fa-cart-shopping"></i></div>
+                <div>
+                    <h4>Purchase Management</h4>
+                    <p>Manage vendors, purchase orders, and vendor bills with automated journal postings.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon green"><i class="fa-solid fa-store"></i></div>
+                <div>
+                    <h4>Sales & Invoicing</h4>
+                    <p>Create sales orders, generate customer invoices, and track receipts effortlessly.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon cyan"><i class="fa-solid fa-book-journal-whills"></i></div>
+                <div>
+                    <h4>Accounting & Reports</h4>
+                    <p>Automated double-entry ledgers, live Profit & Loss, and Balance Sheet statements.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon amber"><i class="fa-solid fa-calculator"></i></div>
+                <div>
+                    <h4>Budget Planning</h4>
+                    <p>Plan quarterly budgets, monitor live actual expenses, and analyze financial variance.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon purple"><i class="fa-solid fa-user-shield"></i></div>
+                <div>
+                    <h4>Customer Portal</h4>
+                    <p>Let customers securely view invoices and make self-service online payments.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon rose"><i class="fa-solid fa-lock"></i></div>
+                <div>
+                    <h4>Secure & Role-Based</h4>
+                    <p>Granular role permissions for Admin, Accountant, and Customer Portal Users.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Furniture Visual Highlight & Key Metrics -->
+        <div class="visual-banner">
+            <div class="banner-stat">
+                <div class="stat-num">100%</div>
+                <div class="stat-lbl">Double-Entry Balanced</div>
+            </div>
+            <div class="banner-stat">
+                <div class="stat-num">Real-Time</div>
+                <div class="stat-lbl">P&L & Balance Sheet</div>
+            </div>
+            <div class="banner-stat">
+                <div class="stat-num">Isolated</div>
+                <div class="stat-lbl">Customer Portal Security</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Authentication Card (Login & Register Tabs) -->
+    <div id="auth-card-section" class="landing-auth-col">
+        <div class="card auth-card">
+            <!-- Two Tabs Header -->
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab-btn {% if active_tab != 'register' %}active{% endif %}" id="btn-tab-login" onclick="switchAuthTab('login')">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                </button>
+                <button type="button" class="auth-tab-btn {% if active_tab == 'register' %}active{% endif %}" id="btn-tab-register" onclick="switchAuthTab('register')">
+                    <i class="fa-solid fa-user-plus"></i> Register
+                </button>
+            </div>
+
+            <!-- TAB 1: LOGIN FORM -->
+            <div class="auth-tab-content {% if active_tab == 'register' %}hidden{% endif %}" id="content-tab-login">
+                <div class="auth-header">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to your Urban Furniture account</p>
+                </div>
+
+                <form action="{{ url_for('login') }}" method="POST" id="form-login">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-user input-icon"></i>
+                            <input type="text" name="username" class="form-control with-icon" placeholder="Enter your username" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-lock input-icon"></i>
+                            <input type="password" name="password" id="input-login-password" class="form-control with-icon" placeholder="Enter your password" required autocomplete="current-password">
+                            <button type="button" class="btn-toggle-pwd" onclick="togglePassword('input-login-password', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; font-size: 0.85rem;">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted); cursor: pointer;">
+                            <input type="checkbox" name="remember" style="accent-color: var(--primary);"> Remember me
+                        </label>
+                        <a href="#" style="color: var(--primary); text-decoration: none;" onclick="alert('Please contact your administrator to reset your password.'); return false;">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem; font-size: 0.95rem;">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </button>
+                </form>
+
+                <div class="auth-switch-prompt">
+                    <span>New to Urban Furniture?</span>
+                    <button type="button" class="btn-link" onclick="switchAuthTab('register')">Create New Account</button>
+                </div>
+            </div>
+
+            <!-- TAB 2: REGISTER FORM -->
+            <div class="auth-tab-content {% if active_tab != 'register' %}hidden{% endif %}" id="content-tab-register">
+                <div class="auth-header">
+                    <h2>Create Account</h2>
+                    <p>Register a new account for Urban Furniture Enterprise</p>
+                </div>
+
+                <form action="{{ url_for('register') }}" method="POST" id="form-register">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-id-card input-icon"></i>
+                            <input type="text" name="name" class="form-control with-icon" placeholder="e.g. John Doe" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-envelope input-icon"></i>
+                            <input type="email" name="email" class="form-control with-icon" placeholder="john@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-at input-icon"></i>
+                            <input type="text" name="username" class="form-control with-icon" placeholder="Choose a username" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-key input-icon"></i>
+                            <input type="password" name="password" id="input-reg-password" class="form-control with-icon" placeholder="Create a strong password" required autocomplete="new-password">
+                            <button type="button" class="btn-toggle-pwd" onclick="togglePassword('input-reg-password', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-check-double input-icon"></i>
+                            <input type="password" name="confirm_password" id="input-reg-confirm" class="form-control with-icon" placeholder="Re-enter password" required autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Account Role</label>
+                        <select name="role" class="form-control" required>
+                            <option value="portal_customer">Customer Portal User</option>
+                            <option value="accountant">Accountant / Invoicing User</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number (Optional)</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-phone input-icon"></i>
+                            <input type="text" name="phone" class="form-control with-icon" placeholder="+91 9876543210">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; padding: 0.85rem; font-size: 0.95rem;">
+                        <i class="fa-solid fa-user-plus"></i> Create Account
+                    </button>
+                </form>
+
+                <div class="auth-switch-prompt">
+                    <span>Already have an account?</span>
+                    <button type="button" class="btn-link" onclick="switchAuthTab('login')">Sign In</button>
+                </div>
+            </div>
+
+            <div class="auth-footer-security">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>256-Bit Encrypted Data & Password Security</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informational Sections for Navigation -->
+<div id="about" class="landing-info-section">
+    <div class="card">
+        <h3 style="font-size: 1.4rem; color: #fff; margin-bottom: 0.75rem;"><i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About Urban Furniture Accounting</h3>
+        <p style="color: var(--text-muted); line-height: 1.6;">
+            Urban Furniture Accounting System is built specifically to address the complex operational workflow of furniture businesses. From raw material purchase tracking to finished goods sales, real-time double-entry journal balance enforcement guarantees that every debited amount equals credited amounts.
+        </p>
+    </div>
+</div>
+
+<div id="contact" class="landing-info-section" style="margin-top: 1.5rem;">
+    <div class="card">
+        <h3 style="font-size: 1.4rem; color: #fff; margin-bottom: 0.75rem;"><i class="fa-solid fa-headset" style="color: var(--secondary);"></i> Help & Support Contact</h3>
+        <p style="color: var(--text-muted); line-height: 1.6;">
+            Need help with your account or budget setup? Contact the Urban Furniture Enterprise Support Desk at <strong>support@urbanfurniture.com</strong> or call <strong>+1 (800) 555-0199</strong>.
+        </p>
+    </div>
+</div>
+
+<!-- Landing Page Footer -->
+<footer class="landing-footer">
+    <div class="footer-container">
+        <div>
+            <span style="font-weight: 700; color: #fff; font-size: 1.1rem;"><i class="fa-solid fa-couch" style="color: var(--primary);"></i> Urban Furniture</span>
+            <span style="color: var(--text-muted); margin-left: 1rem; font-size: 0.85rem;">© 2026 Urban Furniture Accounting System. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#contact">Help & Support</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+function switchAuthTab(tab) {
+    const btnLogin = document.getElementById('btn-tab-login');
+    const btnRegister = document.getElementById('btn-tab-register');
+    const contentLogin = document.getElementById('content-tab-login');
+    const contentRegister = document.getElementById('content-tab-register');
+
+    if (tab === 'register') {
+        btnLogin.classList.remove('active');
+        btnRegister.classList.add('active');
+        contentLogin.classList.add('hidden');
+        contentRegister.classList.remove('hidden');
+    } else {
+        btnRegister.classList.remove('active');
+        btnLogin.classList.add('active');
+        contentRegister.classList.add('hidden');
+        contentLogin.classList.remove('hidden');
+    }
+}
+
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Audit Trail & Activity Log — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="page-title">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--text-heading);"><i class="fa-solid fa-user-shield" style="color: var(--primary); margin-right: 0.5rem;"></i> System Audit Trail</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Comprehensive security & operational activity logs (Admin Only)</p>
+    </div>
+</div>
+
+<!-- Filters Form -->
+<div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+    <form method="GET" action="{{ url_for('audit_trail') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) 120px; gap: 1rem; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">User Name</label>
+            <input type="text" name="user" class="form-control" placeholder="Search user..." value="{{ request.args.get('user', '') }}" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Action</label>
+            <select name="action" class="form-control" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+                <option value="">All Actions</option>
+                <option value="LOGIN" {% if request.args.get('action') == 'LOGIN' %}selected{% endif %}>LOGIN</option>
+                <option value="LOGOUT" {% if request.args.get('action') == 'LOGOUT' %}selected{% endif %}>LOGOUT</option>
+                <option value="REGISTER" {% if request.args.get('action') == 'REGISTER' %}selected{% endif %}>REGISTER</option>
+                <option value="CREATE" {% if request.args.get('action') == 'CREATE' %}selected{% endif %}>CREATE</option>
+                <option value="CONFIRM" {% if request.args.get('action') == 'CONFIRM' %}selected{% endif %}>CONFIRM</option>
+                <option value="POST" {% if request.args.get('action') == 'POST' %}selected{% endif %}>POST</option>
+                <option value="PAYMENT" {% if request.args.get('action') == 'PAYMENT' %}selected{% endif %}>PAYMENT</option>
+                <option value="EXPORT" {% if request.args.get('action') == 'EXPORT' %}selected{% endif %}>EXPORT</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Module</label>
+            <select name="module" class="form-control" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+                <option value="">All Modules</option>
+                <option value="Authentication" {% if request.args.get('module') == 'Authentication' %}selected{% endif %}>Authentication</option>
+                <option value="Master Data" {% if request.args.get('module') == 'Master Data' %}selected{% endif %}>Master Data</option>
+                <option value="Purchases" {% if request.args.get('module') == 'Purchases' %}selected{% endif %}>Purchases</option>
+                <option value="Vendor Bills" {% if request.args.get('module') == 'Vendor Bills' %}selected{% endif %}>Vendor Bills</option>
+                <option value="Sales" {% if request.args.get('module') == 'Sales' %}selected{% endif %}>Sales</option>
+                <option value="Customer Invoices" {% if request.args.get('module') == 'Customer Invoices' %}selected{% endif %}>Customer Invoices</option>
+                <option value="Budgets" {% if request.args.get('module') == 'Budgets' %}selected{% endif %}>Budgets</option>
+                <option value="Reports" {% if request.args.get('module') == 'Reports' %}selected{% endif %}>Reports</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Date</label>
+            <input type="date" name="date" class="form-control" value="{{ request.args.get('date', '') }}" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+        </div>
+
+        <div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;"><i class="fa-solid fa-filter"></i> Filter</button>
+        </div>
+    </form>
+</div>
+
+<!-- Logs Table -->
+<div class="card" style="padding: 1.25rem;">
+    <div style="overflow-x: auto;">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Log ID</th>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Module</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td><span style="font-family: monospace; color: #94a3b8;">#{{ log.id }}</span></td>
+                    <td><span style="font-size: 0.85rem; color: #cbd5e1;">{{ log.created_at }}</span></td>
+                    <td><strong style="color: #60a5fa;">{{ log.username }}</strong></td>
+                    <td>
+                        {% if log.action in ('LOGIN', 'REGISTER') %}
+                        <span class="badge badge-paid">{{ log.action }}</span>
+                        {% elif log.action in ('CREATE', 'POST', 'CONFIRM') %}
+                        <span class="badge badge-posted">{{ log.action }}</span>
+                        {% elif log.action == 'PAYMENT' %}
+                        <span class="badge badge-billed">{{ log.action }}</span>
+                        {% else %}
+                        <span class="badge badge-draft">{{ log.action }}</span>
+                        {% endif %}
+                    </td>
+                    <td><span style="color: #38bdf8; font-weight: 500;">{{ log.module }}</span></td>
+                    <td><span style="color: #f8fafc; font-size: 0.9rem;">{{ log.description }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No audit logs matching criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

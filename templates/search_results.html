@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results for "{{ results.query }}" — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <div class="page-title">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--text-heading);"><i class="fa-solid fa-magnifying-glass" style="color: var(--primary); margin-right: 0.5rem;"></i> Search Results</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Categorized database matches for query: <strong style="color: var(--secondary);">"{{ results.query }}"</strong></p>
+    </div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <!-- Partners (Customers & Vendors) -->
+    {% if results.partners %}
+    <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.75rem;">
+            <span class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-users" style="color: var(--secondary);"></i> Partners / Contacts ({{ results.partners|length }})</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in results.partners %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td><span class="badge badge-posted">{{ p.partner_type|capitalize }}</span></td>
+                    <td>{{ p.email or '—' }}</td>
+                    <td>{{ p.phone or '—' }}</td>
+                    <td><a href="{{ url_for('master_data') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Products -->
+    {% if results.products %}
+    <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.75rem;">
+            <span class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-chair" style="color: var(--success);"></i> Products ({{ results.products|length }})</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Sale Price</th>
+                    <th>Cost Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prod in results.products %}
+                <tr>
+                    <td><strong>{{ prod.name }}</strong></td>
+                    <td><strong style="color: var(--success);">{{ prod.sale_price|currency }}</strong></td>
+                    <td><strong style="color: var(--warning);">{{ prod.cost_price|currency }}</strong></td>
+                    <td><a href="{{ url_for('master_data') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Purchase Orders -->
+    {% if results.purchase_orders %}
+    <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.75rem;">
+            <span class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-cart-shopping" style="color: var(--warning);"></i> Purchase Orders ({{ results.purchase_orders|length }})</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>PO #</th>
+                    <th>Vendor</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for po in results.purchase_orders %}
+                <tr>
+                    <td><strong style="font-family: monospace;">{{ po.po_number }}</strong></td>
+                    <td>{{ po.vendor_name }}</td>
+                    <td>{{ po.order_date }}</td>
+                    <td><strong style="color: var(--warning);">{{ po.total_amount|currency }}</strong></td>
+                    <td><span class="badge badge-{{ po.state }}">{{ po.state|upper }}</span></td>
+                    <td><a href="{{ url_for('purchase') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Sales Orders -->
+    {% if results.sales_orders %}
+    <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.75rem;">
+            <span class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-store" style="color: var(--primary);"></i> Sales Orders ({{ results.sales_orders|length }})</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>SO #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for so in results.sales_orders %}
+                <tr>
+                    <td><strong style="font-family: monospace;">{{ so.so_number }}</strong></td>
+                    <td>{{ so.customer_name }}</td>
+                    <td>{{ so.order_date }}</td>
+                    <td><strong style="color: var(--success);">{{ so.total_amount|currency }}</strong></td>
+                    <td><span class="badge badge-{{ so.state }}">{{ so.state|upper }}</span></td>
+                    <td><a href="{{ url_for('sales') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Invoices & Bills -->
+    {% if results.invoices %}
+    <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.75rem;">
+            <span class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--danger);"></i> Invoices & Bills ({{ results.invoices|length }})</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Number</th>
+                    <th>Partner</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in results.invoices %}
+                <tr>
+                    <td><strong style="font-family: monospace;">{{ inv.number }}</strong></td>
+                    <td>{{ inv.partner_name }}</td>
+                    <td>
+                        {% if inv.move_type == 'out_invoice' %}
+                        <span class="badge badge-paid">Customer Inv</span>
+                        {% else %}
+                        <span class="badge badge-billed">Vendor Bill</span>
+                        {% endif %}
+                    </td>
+                    <td><strong style="color: var(--success);">{{ inv.amount_total|currency }}</strong></td>
+                    <td><span class="badge badge-{{ inv.state }}">{{ inv.state|upper }}</span></td>
+                    <td>
+                        {% if inv.move_type == 'out_invoice' %}
+                        <a href="{{ url_for('sales') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a>
+                        {% else %}
+                        <a href="{{ url_for('purchase') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Journal Entries -->
+    {% if results.journal_entries %}
+    <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.75rem;">
+            <span class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-book-journal-whills" style="color: var(--primary);"></i> Journal Entries ({{ results.journal_entries|length }})</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Entry #</th>
+                    <th>Date</th>
+                    <th>Reference</th>
+                    <th>Type</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for je in results.journal_entries %}
+                <tr>
+                    <td><strong style="font-family: monospace;">{{ je.entry_number }}</strong></td>
+                    <td>{{ je.date }}</td>
+                    <td>{{ je.ref or '—' }}</td>
+                    <td><span class="badge badge-posted">{{ je.move_type }}</span></td>
+                    <td><a href="{{ url_for('accounting') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if not results.partners and not results.products and not results.purchase_orders and not results.sales_orders and not results.invoices and not results.journal_entries %}
+    <div class="card" style="padding: 3rem; text-align: center;">
+        <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; color: var(--text-dim); margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--text-heading);">No records found for "{{ results.query }}"</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Try searching with a different keyword, order number, customer name, or product name.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

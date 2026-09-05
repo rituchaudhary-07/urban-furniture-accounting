@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchase Workflow — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Purchase Operations & Vendor Bills</h1>
+        <p>Manage procurement workflow: PO &rarr; Vendor Bill &rarr; Accounting Entry &rarr; Payment</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('modal-po')"><i class="fa-solid fa-cart-plus"></i> Create Purchase Order</button>
+</div>
+
+<!-- Section 1: Purchase Orders -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fa-solid fa-file-contract"></i> Purchase Orders</span>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>PO Number</th>
+                <th>Vendor</th>
+                <th>Order Date</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for po in purchase_orders %}
+            <tr>
+                <td><strong>{{ po.po_number }}</strong></td>
+                <td>{{ po.vendor_name }}</td>
+                <td>{{ po.order_date }}</td>
+                <td><strong>${{ "%.2f"|format(po.total_amount) }}</strong></td>
+                <td>
+                    <span class="badge badge-{{ po.state }}">{{ po.state|upper }}</span>
+                </td>
+                <td>
+                    {% if po.state == 'draft' %}
+                    <form action="{{ url_for('purchase') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="action" value="confirm_po">
+                        <input type="hidden" name="po_id" value="{{ po.id }}">
+                        <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check"></i> Confirm PO</button>
+                    </form>
+                    {% elif po.state == 'confirmed' %}
+                    <form action="{{ url_for('purchase') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="action" value="create_bill">
+                        <input type="hidden" name="po_id" value="{{ po.id }}">
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-file-invoice"></i> Create Bill</button>
+                    </form>
+                    {% else %}
+                    <span style="color: var(--text-dim); font-size: 0.85rem;"><i class="fa-solid fa-check-double"></i> Billed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No Purchase Orders created yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Section 2: Vendor Bills -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fa-solid fa-receipt"></i> Vendor Bills (Accounts Payable)</span>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Bill Number</th>
+                <th>Vendor</th>
+                <th>Invoice Date</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Accounting & Payment Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bill in vendor_bills %}
+            <tr>
+                <td><strong>{{ bill.number }}</strong></td>
+                <td>{{ bill.vendor_name }}</td>
+                <td>{{ bill.invoice_date }}</td>
+                <td><strong>${{ "%.2f"|format(bill.amount_total) }}</strong></td>
+                <td><span class="badge badge-{{ bill.state }}">{{ bill.state|upper }}</span></td>
+                <td>
+                    {% if bill.state == 'draft' %}
+                    <form action="{{ url_for('purchase') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="action" value="post_bill">
+                        <input type="hidden" name="bill_id" value="{{ bill.id }}">
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-stamp"></i> Post Bill (Create Journal Entry)</button>
+                    </form>
+                    {% elif bill.state == 'posted' %}
+                    <form action="{{ url_for('purchase') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="action" value="pay_bill">
+                        <input type="hidden" name="bill_id" value="{{ bill.id }}">
+                        <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-money-bill-wave"></i> Register Bank Payment</button>
+                    </form>
+                    {% else %}
+                    <span style="color: #34d399; font-weight: 600; font-size: 0.85rem;"><i class="fa-solid fa-circle-check"></i> Paid & Reconciled</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No Vendor Bills generated yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: Create PO -->
+<div class="modal-backdrop" id="modal-po">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create Purchase Order</h3>
+            <button class="btn-close" onclick="closeModal('modal-po')">&times;</button>
+        </div>
+        <form action="{{ url_for('purchase') }}" method="POST">
+            <input type="hidden" name="action" value="create_po">
+            <div class="form-group">
+                <label class="form-label">Vendor</label>
+                <select name="vendor_id" class="form-control" required>
+                    {% for v in vendors %}
+                    <option value="{{ v.id }}">{{ v.name }} ({{ v.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Product</label>
+                <select name="product_id" class="form-control" required>
+                    {% for prod in products %}
+                    <option value="{{ prod.id }}">{{ prod.name }} (Cost: ${{ "%.2f"|format(prod.cost_price) }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quantity</label>
+                <input type="number" min="1" name="qty" class="form-control calc-qty" value="10" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Unit Price ($)</label>
+                <input type="number" step="0.01" name="unit_price" class="form-control calc-price" value="80.00" required>
+            </div>
+            <div style="background: var(--input-bg); border: 1px solid var(--border-card); padding: 1rem; border-radius: 10px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted); font-size: 0.9rem;">Estimated Total:</span>
+                <span class="calc-total" style="font-size: 1.2rem; font-weight: 700; color: var(--text-heading);">$800.00</span>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Create Purchase Order</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

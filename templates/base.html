@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Urban Furniture Accounting System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('uf_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <nav class="navbar">
+        <a href="{{ url_for('dashboard') }}" class="navbar-brand">
+            <i class="fa-solid fa-couch"></i>
+            <span>Urban Furniture Accounting</span>
+        </a>
+
+        {% if session.get('role') != 'portal_customer' %}
+        <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="{{ url_for('master_data') }}" class="{% if request.endpoint == 'master_data' %}active{% endif %}"><i class="fa-solid fa-database"></i> Master Data</a></li>
+            <li><a href="{{ url_for('purchase') }}" class="{% if request.endpoint == 'purchase' %}active{% endif %}"><i class="fa-solid fa-cart-shopping"></i> Purchase</a></li>
+            <li><a href="{{ url_for('sales') }}" class="{% if request.endpoint == 'sales' %}active{% endif %}"><i class="fa-solid fa-store"></i> Sales</a></li>
+            <li><a href="{{ url_for('accounting') }}" class="{% if request.endpoint == 'accounting' %}active{% endif %}"><i class="fa-solid fa-book-journal-whills"></i> Accounting</a></li>
+            <li><a href="{{ url_for('reports') }}" class="{% if request.endpoint == 'reports' %}active{% endif %}"><i class="fa-solid fa-file-invoice-dollar"></i> Reports</a></li>
+            {% if session.get('role') == 'admin' %}
+            <li><a href="{{ url_for('audit_trail') }}" class="{% if request.endpoint == 'audit_trail' %}active{% endif %}"><i class="fa-solid fa-user-shield"></i> Audit Trail</a></li>
+            {% endif %}
+        </ul>
+
+        <!-- Global Search Bar -->
+        <form action="{{ url_for('search') }}" method="GET" style="display: flex; align-items: center; margin: 0 0.5rem;">
+            <div style="position: relative; display: flex; align-items: center;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 0.75rem; color: #94a3b8; font-size: 0.85rem;"></i>
+                <input type="text" name="q" placeholder="Search orders, invoices..." value="{{ request.args.get('q', '') }}" style="background: var(--input-bg); border: 1px solid rgba(255,255,255,0.12); color: var(--text-heading); padding: 0.4rem 0.75rem 0.4rem 2.2rem; border-radius: 20px; font-size: 0.82rem; width: 200px; outline: none;">
+            </div>
+        </form>
+        {% else %}
+        <ul class="nav-links">
+            <li><a href="{{ url_for('portal') }}" class="active"><i class="fa-solid fa-user-shield"></i> Customer Portal</a></li>
+        </ul>
+        {% endif %}
+
+        <div class="user-profile">
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <span class="role-badge">{{ session.get('role') }}</span>
+            <span style="font-weight: 600;">{{ session.get('username') }}</span>
+            <a href="{{ url_for('logout') }}" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

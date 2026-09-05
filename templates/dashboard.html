@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Dashboard — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<!-- 1. DASHBOARD HEADER -->
+<div class="dashboard-header-row">
+    <div class="page-title">
+        <h1>Financial Dashboard</h1>
+        <p>Real-time accounting overview, double-entry audit status, and company key performance indicators</p>
+    </div>
+    <div class="header-info-cards">
+        <div class="header-pill">
+            <div class="pill-icon info-blue">
+                <i class="fa-regular fa-calendar-days"></i>
+            </div>
+            <div>
+                <div class="pill-label">Today's Date</div>
+                <div id="current-date-display" class="pill-value">Sep 5, 2026</div>
+            </div>
+        </div>
+        <div class="header-pill">
+            <div class="pill-icon success-green">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div>
+                <div class="pill-label">Welcome Back</div>
+                <div class="pill-value">Hello, {{ session.get('username') }}!</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if alerts %}
+<!-- SMART ACCOUNTING ALERTS & ATTENTION BANNER -->
+<div class="alerts-banner-card">
+    <div class="alerts-banner-title">
+        <i class="fa-solid fa-bell"></i> Alerts & Operational Attention ({{ alerts|length }})
+    </div>
+    <div class="alerts-list">
+        {% for alert in alerts %}
+        <div class="alert-item alert-item-{{ alert.type }}">
+            <i class="fa-solid {{ alert.icon }}" style="font-size: 1.1rem; color: {% if alert.type == 'danger' %}var(--danger){% else %}var(--warning){% endif %};"></i>
+            <div>
+                <strong style="color: {% if alert.type == 'danger' %}var(--danger){% else %}var(--warning){% endif %}; font-size: 0.85rem;">{{ alert.title }}:</strong>
+                <span style="font-size: 0.85rem; margin-left: 0.3rem;">{{ alert.message }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- 2. KPI CARDS GRID (ALL 6 REASONABLY TILED AND RESPONSIVE) -->
+<div class="dashboard-kpi-grid">
+    <!-- 1. Sales Revenue (Inflow / Positive) -->
+    <div class="metric-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Sales Revenue</span>
+            <div class="kpi-icon-badge inflow">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-value tabular-nums">{{ pnl.total_income|currency }}</div>
+            <div class="kpi-subtext">Posted Sales</div>
+        </div>
+    </div>
+
+    <!-- 2. Purchase Expenses (Outflow / Negative) -->
+    <div class="metric-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Purchase Expenses</span>
+            <div class="kpi-icon-badge outflow">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+            </div>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-value tabular-nums">{{ pnl.total_expense|currency }}</div>
+            <div class="kpi-subtext">Vendor Bills & Costs</div>
+        </div>
+    </div>
+
+    <!-- 3. Net Profit / (Loss) (Neutral / Status) -->
+    <div class="metric-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Net Profit / (Loss)</span>
+            <div class="kpi-icon-badge neutral">
+                <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-value tabular-nums {% if pnl.net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ pnl.net_profit|currency }}
+            </div>
+            <div class="kpi-subtext">Bottom-Line Return</div>
+        </div>
+    </div>
+
+    <!-- 4. Total Assets (Inflow / Asset) -->
+    <div class="metric-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Assets</span>
+            <div class="kpi-icon-badge inflow">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-value tabular-nums">{{ bs.total_assets|currency }}</div>
+            <div class="kpi-subtext">Bank & Cash Balances</div>
+        </div>
+    </div>
+
+    <!-- 5. Outstanding Receivables (Inflow / Asset) -->
+    <div class="metric-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Receivables</span>
+            <div class="kpi-icon-badge inflow">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-value tabular-nums text-inflow">{{ outstanding_receivables|currency }}</div>
+            <div class="kpi-subtext">Uncollected Invoices</div>
+        </div>
+    </div>
+
+    <!-- 6. Outstanding Payables (Outflow / Liability) -->
+    <div class="metric-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Payables</span>
+            <div class="kpi-icon-badge outflow">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+            </div>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-value tabular-nums text-outflow">{{ outstanding_payables|currency }}</div>
+            <div class="kpi-subtext">Unpaid Vendor Bills</div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. MAIN ANALYTICS SECTION (3 Columns) -->
+<div class="dashboard-analytics-grid">
+    <!-- Chart 1: Revenue vs Expenses -->
+    <div class="card chart-card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-chart-column text-primary"></i> Revenue vs Expenses</span>
+            <span class="badge-tag">Live Actuals</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="revExpChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Profit / Loss Trend -->
+    <div class="card chart-card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-chart-line text-success"></i> Profit / Loss Trend</span>
+            <span class="badge-tag">Historical Audit</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="pnlTrendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Column 3: Accounting Balance Audit Status -->
+    <div class="card audit-card">
+        <div>
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-scale-balanced text-accent"></i> Accounting Audit</span>
+            </div>
+
+            {% if bs.is_balanced %}
+            <div class="audit-status-box balanced">
+                <div class="audit-status-header">
+                    <span class="status-title">
+                        <i class="fa-solid fa-circle-check"></i> Balanced
+                    </span>
+                    <span class="badge badge-paid">Verified</span>
+                </div>
+                <div class="audit-status-desc">
+                    Double-entry debits and credits match perfectly.
+                </div>
+            </div>
+            {% else %}
+            <div class="audit-status-box unbalanced">
+                <div class="status-title text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Unbalanced Entry Detected
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Accounting Equation Box -->
+            <div class="accounting-equation-box">
+                <div class="equation-label">
+                    Accounting Equation: Assets = Liabilities + Equity
+                </div>
+                <div class="equation-formula tabular-nums">
+                    <span class="text-asset">{{ bs.total_assets|currency }}</span> = 
+                    <span class="text-liability">{{ bs.total_liabilities|currency }}</span> + 
+                    <span class="text-equity">{{ bs.total_equity|currency }}</span>
+                </div>
+                <div class="equation-subformula tabular-nums">
+                    {{ bs.total_assets|currency }} = {{ (bs.total_liabilities + bs.total_equity)|currency }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. LOWER SECTION (2 Columns: Recent Journal Entries & Open Items) -->
+<div class="dashboard-lower-grid">
+    <!-- LEFT: Recent Journal Entries Table -->
+    <div class="card table-card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-book-journal-whills text-primary"></i> Recent Journal Entries</span>
+            <a href="{{ url_for('accounting') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-arrow-right"></i> View All</a>
+        </div>
+        <div class="table-wrapper">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Entry #</th>
+                        <th>Date</th>
+                        <th>Reference</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in recent_entries %}
+                    <tr>
+                        <td><strong class="tabular-nums font-mono entry-num">{{ entry.entry_number }}</strong></td>
+                        <td><span class="text-muted text-sm">{{ entry.date }}</span></td>
+                        <td><span class="text-subtle text-sm">{{ entry.ref or '—' }}</span></td>
+                        <td><span class="text-muted text-sm">{{ entry.entry_desc or entry.move_type|capitalize }}</span></td>
+                        <td>
+                            {% if entry.move_type == 'out_invoice' %}
+                            <span class="badge badge-inflow">Customer Inv</span>
+                            {% elif entry.move_type == 'in_invoice' %}
+                            <span class="badge badge-outflow">Vendor Bill</span>
+                            {% elif 'payment' in entry.move_type %}
+                            <span class="badge badge-payment">Payment</span>
+                            {% else %}
+                            <span class="badge badge-posted">General Entry</span>
+                            {% endif %}
+                        </td>
+                        <td><strong class="tabular-nums text-success">{{ entry.total_debit|currency }}</strong></td>
+                        <td>
+                            {% if "%.2f"|format(entry.total_debit) == "%.2f"|format(entry.total_credit) %}
+                            <span class="badge badge-paid"><i class="fa-solid fa-check"></i> Balanced</span>
+                            {% else %}
+                            <span class="badge badge-danger"><i class="fa-solid fa-xmark"></i> Unbalanced</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="empty-table-msg">No journal entries recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RIGHT: Open Items Summary Cards -->
+    <div class="open-items-col">
+        <!-- Card 1: Open Customer Invoices -->
+        <div class="card open-item-card">
+            <div class="open-item-header">
+                <div class="open-item-title-group">
+                    <div class="open-item-icon inflow">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div>
+                        <div class="open-item-title">Open Customer Invoices</div>
+                        <div class="open-item-subtitle">Pending payment collection</div>
+                    </div>
+                </div>
+            </div>
+            <div class="open-item-body">
+                <div>
+                    <div class="open-item-amount tabular-nums text-inflow">{{ outstanding_receivables|currency }}</div>
+                    <div class="open-item-count">{{ open_customer_invoices_count }} Unpaid Invoices</div>
+                </div>
+                <a href="{{ url_for('sales') }}" class="open-item-link">
+                    View Sales <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Card 2: Vendor Bills Pending -->
+        <div class="card open-item-card">
+            <div class="open-item-header">
+                <div class="open-item-title-group">
+                    <div class="open-item-icon outflow">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <div>
+                        <div class="open-item-title">Vendor Bills Pending</div>
+                        <div class="open-item-subtitle">Pending vendor settlement</div>
+                    </div>
+                </div>
+            </div>
+            <div class="open-item-body">
+                <div>
+                    <div class="open-item-amount tabular-nums text-outflow">{{ outstanding_payables|currency }}</div>
+                    <div class="open-item-count">{{ open_vendor_bills_count }} Pending Bills</div>
+                </div>
+                <a href="{{ url_for('purchase') }}" class="open-item-link">
+                    View Purchases <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Card 3: Active Orders Overview -->
+        <div class="card open-item-card">
+            <div class="open-item-title-row">
+                <i class="fa-solid fa-boxes-stacked text-accent"></i> Commercial Activity
+            </div>
+            <div class="activity-grid">
+                <div class="activity-box">
+                    <div class="activity-label">Purchase Orders</div>
+                    <div class="activity-value tabular-nums">{{ total_pos }}</div>
+                </div>
+                <div class="activity-box">
+                    <div class="activity-label">Sales Orders</div>
+                    <div class="activity-value tabular-nums">{{ total_sos }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Today's Date Display
+    const dateElem = document.getElementById('current-date-display');
+    if (dateElem) {
+        const now = new Date();
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        dateElem.textContent = now.toLocaleDateString('en-US', options);
+    }
+
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+    const tickColor = isLight ? '#475569' : '#94a3b8';
+    const tickColorX = isLight ? '#334155' : '#cbd5e1';
+
+    // 2. Revenue vs Expenses Bar Chart
+    const revExpCtx = document.getElementById('revExpChart');
+    if (revExpCtx) {
+        const incomeVal = {{ pnl.total_income|tojson }};
+        const expenseVal = {{ pnl.total_expense|tojson }};
+        
+        new Chart(revExpCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Sales Revenue', 'Purchase Expenses'],
+                datasets: [{
+                    label: 'Amount ($)',
+                    data: [incomeVal, expenseVal],
+                    backgroundColor: [
+                        isLight ? 'rgba(5, 150, 105, 0.85)' : 'rgba(16, 185, 129, 0.8)',
+                        isLight ? 'rgba(217, 119, 6, 0.85)' : 'rgba(245, 158, 11, 0.8)'
+                    ],
+                    borderColor: [
+                        isLight ? '#059669' : '#10b981',
+                        isLight ? '#d97706' : '#f59e0b'
+                    ],
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    barThickness: 36
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isLight ? '#0f172a' : '#1e293b',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return ' Amount: $' + context.raw.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: tickColor, font: { size: 11 }, callback: function(val) { return '$' + val; } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: tickColorX, font: { size: 11, weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Profit / Loss Trend Line Chart
+    const pnlTrendCtx = document.getElementById('pnlTrendChart');
+    if (pnlTrendCtx) {
+        const netProfitVal = {{ pnl.net_profit|tojson }};
+        
+        new Chart(pnlTrendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Opening', 'Q1', 'Q2', 'Current YTD'],
+                datasets: [{
+                    label: 'Net Profit ($)',
+                    data: [0.00, 0.00, 0.00, netProfitVal],
+                    borderColor: netProfitVal >= 0 ? (isLight ? '#059669' : '#34d399') : (isLight ? '#dc2626' : '#f87171'),
+                    backgroundColor: netProfitVal >= 0 ? (isLight ? 'rgba(5, 150, 105, 0.12)' : 'rgba(52, 211, 153, 0.12)') : (isLight ? 'rgba(220, 38, 38, 0.12)' : 'rgba(248, 113, 113, 0.12)'),
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: netProfitVal >= 0 ? (isLight ? '#059669' : '#34d399') : (isLight ? '#dc2626' : '#f87171'),
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isLight ? '#0f172a' : '#1e293b',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw;
+                                const sign = val < 0 ? '-$' : '$';
+                                return ' Net Profit: ' + sign + Math.abs(val).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: { color: tickColor, font: { size: 11 }, callback: function(val) { return '$' + val; } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: tickColorX, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

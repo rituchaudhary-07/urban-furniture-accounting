@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Portal — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Welcome, {{ partner.name }}</h1>
+        <p>Customer Portal & Financial Account Management (Logged in as: {{ session.get('username') }})</p>
+    </div>
+    <span class="badge badge-paid" style="font-size: 0.9rem; padding: 0.5rem 1rem;"><i class="fa-solid fa-lock"></i> Restricted Customer Portal Access</span>
+</div>
+
+<!-- Customer Dashboard Summary Cards (KPIs) -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+            <i class="fa-solid fa-file-invoice"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Total Invoices</span>
+            <h3 class="stat-value">{{ kpis.total_invoices }}</h3>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(52, 211, 153, 0.15); color: #34d399;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Total Paid</span>
+            <h3 class="stat-value" style="color: #34d399;">${{ "%.2f"|format(kpis.total_paid) }}</h3>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Outstanding Balance</span>
+            <h3 class="stat-value" style="color: #fbbf24;">${{ "%.2f"|format(kpis.outstanding_balance) }}</h3>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(248, 113, 113, 0.15); color: #f87171;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Overdue Amount</span>
+            <h3 class="stat-value" style="color: #f87171;">${{ "%.2f"|format(kpis.overdue_amount) }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- My Invoices Table -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="card-title"><i class="fa-solid fa-receipt"></i> My Invoices & Bills</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Click "View Details" or "Pay Now" to manage invoice</span>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Invoice Number</th>
+                <th>Invoice Date</th>
+                <th>Due Date</th>
+                <th style="text-align: right;">Total Amount</th>
+                <th style="text-align: right;">Amount Paid</th>
+                <th style="text-align: right;">Balance Due</th>
+                <th>Status</th>
+                <th style="text-align: center;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('portal_invoice_detail', inv_id=inv.id) }}" style="color: var(--text-heading); font-weight: 600; text-decoration: none;">
+                        <i class="fa-solid fa-file-pdf" style="color: var(--primary); margin-right: 0.3rem;"></i>{{ inv.number }}
+                    </a>
+                </td>
+                <td>{{ inv.invoice_date }}</td>
+                <td>
+                    {% if inv.due_date and inv.due_date < today and inv.state != 'paid' %}
+                        <span style="color: #f87171; font-weight: 600;">{{ inv.due_date }} (Overdue)</span>
+                    {% else %}
+                        <span>{{ inv.due_date }}</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;"><strong>${{ "%.2f"|format(inv.amount_total) }}</strong></td>
+                <td style="text-align: right;"><span style="color: #34d399;">${{ "%.2f"|format(inv.amount_paid) }}</span></td>
+                <td style="text-align: right;">
+                    {% if inv.amount_residual > 0 %}
+                    <strong style="color: #fbbf24;">${{ "%.2f"|format(inv.amount_residual) }}</strong>
+                    {% else %}
+                    <span style="color: #34d399;">$0.00</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if inv.state == 'paid' %}
+                        <span class="badge badge-paid"><i class="fa-solid fa-check"></i> PAID</span>
+                    {% elif inv.due_date and inv.due_date < today %}
+                        <span class="badge badge-danger"><i class="fa-solid fa-exclamation"></i> OVERDUE</span>
+                    {% else %}
+                        <span class="badge badge-posted"><i class="fa-solid fa-clock"></i> UNPAID</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; justify-content: center; gap: 0.5rem;">
+                        <a href="{{ url_for('portal_invoice_detail', inv_id=inv.id) }}" class="btn btn-sm btn-secondary" title="View Details">
+                            <i class="fa-solid fa-eye"></i> Details
+                        </a>
+                        {% if inv.state != 'paid' and inv.amount_residual > 0 %}
+                        <form action="{{ url_for('portal') }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="action" value="portal_pay">
+                            <input type="hidden" name="inv_id" value="{{ inv.id }}">
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="fa-solid fa-credit-card"></i> Pay Now (${{ "%.2f"|format(inv.amount_residual) }})
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="color: #34d399; font-weight: 600; font-size: 0.85rem; padding: 0.25rem 0.5rem;">
+                            <i class="fa-solid fa-circle-check"></i> Paid Online
+                        </span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No invoices found for your customer account.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Payment History Table -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <span class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Payment History</span>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Payment Reference</th>
+                <th>Payment Date</th>
+                <th>Invoice Reference</th>
+                <th style="text-align: right;">Amount Paid</th>
+                <th>Payment Method / Journal</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pay in payments %}
+            <tr>
+                <td><strong>{{ pay.payment_number }}</strong></td>
+                <td>{{ pay.payment_date }}</td>
+                <td>
+                    {% if pay.invoice_id %}
+                    <a href="{{ url_for('portal_invoice_detail', inv_id=pay.invoice_id) }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+                        {{ pay.invoice_number or 'Invoice #' ~ pay.invoice_id }}
+                    </a>
+                    {% else %}
+                    <span style="color: var(--text-muted);">Direct Payment</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;"><strong style="color: #34d399;">${{ "%.2f"|format(pay.amount) }}</strong></td>
+                <td>{{ pay.journal_name or 'Bank Journal' }}</td>
+                <td><span class="badge badge-paid"><i class="fa-solid fa-circle-check"></i> Completed</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No payment transactions recorded yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Security Isolation Assurance Box -->
+<div class="card" style="background: var(--input-bg); border-color: var(--border-card);">
+    <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 2.2rem; color: var(--primary);"></i>
+        <div>
+            <h4 style="font-size: 1.05rem; color: var(--text-heading); margin-bottom: 0.25rem;">Security Verification & Isolation</h4>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.5;">
+                Your customer account is strictly isolated. Backend server checks prevent access to Chart of Accounts, General Ledger, Budgets, and invoices or payments belonging to other partners.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Reports — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="page-title">
+        <h1>Financial Statements & Budget Reports</h1>
+        <p>Live calculated Profit & Loss, Balance Sheet, and Budget Variance reports</p>
+    </div>
+    <div>
+        <button onclick="window.print()" class="btn btn-sm" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);"><i class="fa-solid fa-print"></i> Print Statements</button>
+    </div>
+</div>
+
+<!-- Section 1: Profit & Loss and Balance Sheet -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Profit & Loss Card -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-chart-line"></i> Profit & Loss Statement</span>
+            <a href="{{ url_for('export_pnl') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th style="text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="background: rgba(255,255,255,0.03);"><td colspan="2"><strong style="color: var(--secondary);">INCOME / REVENUE</strong></td></tr>
+                {% for inc in pnl.income_rows %}
+                <tr>
+                    <td>{{ inc.code }} - {{ inc.name }}</td>
+                    <td style="text-align: right; color: #34d399; font-weight: 600;">{{ inc.amount|currency }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No Sales Income recorded.</td></tr>
+                {% endfor %}
+                <tr style="border-top: 1px solid var(--border-card);">
+                    <td><strong>Total Operating Income</strong></td>
+                    <td style="text-align: right; color: #34d399; font-weight: 700;">{{ pnl.total_income|currency }}</td>
+                </tr>
+
+                <tr style="background: rgba(255,255,255,0.03);"><td colspan="2"><strong style="color: var(--warning);">OPERATING EXPENSES</strong></td></tr>
+                {% for exp in pnl.expense_rows %}
+                <tr>
+                    <td>{{ exp.code }} - {{ exp.name }}</td>
+                    <td style="text-align: right; color: #f87171; font-weight: 600;">{{ exp.amount|currency }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No Purchase Expenses recorded.</td></tr>
+                {% endfor %}
+                <tr style="border-top: 1px solid var(--border-card);">
+                    <td><strong>Total Operating Expenses</strong></td>
+                    <td style="text-align: right; color: #f87171; font-weight: 700;">{{ pnl.total_expense|currency }}</td>
+                </tr>
+
+                <tr style="border-top: 2px solid var(--primary); background: rgba(99,102,241,0.1);">
+                    <td><strong style="font-size: 1.1rem; color: var(--text-heading);">NET PROFIT / (LOSS)</strong></td>
+                    <td style="text-align: right; font-size: 1.2rem; font-weight: 700; color: {% if pnl.net_profit >= 0 %}#34d399{% else %}#f87171{% endif %};">
+                        {{ pnl.net_profit|currency }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Balance Sheet Card -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-scale-balanced"></i> Balance Sheet Statement</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                {% if bs.is_balanced %}
+                <span class="badge badge-paid"><i class="fa-solid fa-circle-check"></i> BALANCED</span>
+                {% endif %}
+                <a href="{{ url_for('export_balance_sheet') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+            </div>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th style="text-align: right;">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="background: rgba(255,255,255,0.03);"><td colspan="2"><strong style="color: var(--secondary);">ASSETS</strong></td></tr>
+                {% for ass in bs.asset_rows %}
+                <tr>
+                    <td>{{ ass.code }} - {{ ass.name }}</td>
+                    <td style="text-align: right; color: #34d399; font-weight: 600;">{{ ass.balance|currency }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="border-top: 1px solid var(--border-card);">
+                    <td><strong>TOTAL ASSETS</strong></td>
+                    <td style="text-align: right; color: #34d399; font-weight: 700;">{{ bs.total_assets|currency }}</td>
+                </tr>
+
+                <tr style="background: rgba(255,255,255,0.03);"><td colspan="2"><strong style="color: var(--warning);">LIABILITIES</strong></td></tr>
+                {% for liab in bs.liability_rows %}
+                <tr>
+                    <td>{{ liab.code }} - {{ liab.name }}</td>
+                    <td style="text-align: right; color: #fbbf24; font-weight: 600;">{{ liab.balance|currency }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="border-top: 1px solid var(--border-card);">
+                    <td><strong>TOTAL LIABILITIES</strong></td>
+                    <td style="text-align: right; color: #fbbf24; font-weight: 700;">{{ bs.total_liabilities|currency }}</td>
+                </tr>
+
+                <tr style="background: rgba(255,255,255,0.03);"><td colspan="2"><strong style="color: var(--primary);">OWNER EQUITY</strong></td></tr>
+                {% for eq in bs.equity_rows %}
+                <tr>
+                    <td>{{ eq.code }} - {{ eq.name }}</td>
+                    <td style="text-align: right; color: #60a5fa; font-weight: 600;">{{ eq.balance|currency }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td>Retained Net Profit / (Loss)</td>
+                    <td style="text-align: right; color: {% if bs.net_profit >= 0 %}#34d399{% else %}#f87171{% endif %}; font-weight: 600;">{{ bs.net_profit|currency }}</td>
+                </tr>
+                <tr style="border-top: 1px solid var(--border-card);">
+                    <td><strong>TOTAL EQUITY</strong></td>
+                    <td style="text-align: right; color: #60a5fa; font-weight: 700;">{{ bs.total_equity|currency }}</td>
+                </tr>
+
+                <tr style="border-top: 2px solid var(--primary); background: rgba(99,102,241,0.1);">
+                    <td><strong style="font-size: 1.05rem; color: var(--text-heading);">TOTAL LIABILITIES & EQUITY</strong></td>
+                    <td style="text-align: right; font-size: 1.2rem; font-weight: 700; color: #34d399;">
+                        {{ (bs.total_liabilities + bs.total_equity)|currency }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 2: Budget Report (Pivot/Summary) -->
+<div class="card">
+    <div class="card-header" style="margin-bottom: 0.75rem;">
+        <span class="card-title"><i class="fa-solid fa-chart-pie"></i> Budget Report (Planned vs Actual vs Variance)</span>
+        <a href="{{ url_for('export_budgets') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+    </div>
+    <div style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; background: var(--input-bg); padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--border-card);">
+        <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i>
+        <span><strong>Live Accounting Integration:</strong> Actual amounts are read-only and automatically calculated from posted expense journal entries matching the budget's analytic account and date range.</span>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Budget Name</th>
+                <th>Analytic Account</th>
+                <th>Period</th>
+                <th>Planned Amount</th>
+                <th title="Calculated automatically from posted expense transactions">Actual Amount <i class="fa-solid fa-calculator" style="font-size: 0.75rem; color: #fbbf24;"></i></th>
+                <th title="Variance = Planned Amount - Actual Amount">Variance <i class="fa-solid fa-scale-balanced" style="font-size: 0.75rem; color: #34d399;"></i></th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in budgets %}
+            <tr>
+                <td><strong>{{ b.budget_name }}</strong></td>
+                <td><span style="color: var(--secondary);">{{ b.analytic_name }}</span></td>
+                <td>{{ b.period_start }} &rarr; {{ b.period_end }}</td>
+                <td><strong>{{ b.planned_amount|currency }}</strong></td>
+                <td><strong style="color: #fbbf24;" title="Read-only: Calculated live from posted accounting transactions">{{ b.actual_amount|currency }}</strong></td>
+                <td><strong style="color: #34d399;" title="Variance = Planned Amount - Actual Amount">{{ b.variance|currency }}</strong></td>
+                <td><span class="badge badge-{{ b.state }}">{{ b.state|upper }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No Budgets created yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

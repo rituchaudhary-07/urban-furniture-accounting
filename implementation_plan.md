@@ -1,109 +1,96 @@
-# Implementation Plan — Urban Furniture Accounting System (`urban_furniture_accounting`)
+# Implementation Plan — Standalone Urban Furniture Accounting Web Application
 
-Build a custom Odoo module `urban_furniture_accounting` for the "Urban Furniture: Accounting System" hackathon specification. The solution prioritizes **CORRECTNESS > COMPLETENESS > RELIABILITY > DEMOABILITY > UI POLISH**.
-
----
-
-## Environment & Requirements Inspection Summary (Step 1)
-
-1. **Environment State**:
-   - Python: 3.13.5
-   - Workspace: `d:\Urban Furniture Accounting System`
-   - Odoo Core: Module targeting Odoo 17.0 / 18.0 API & data structure standard.
-2. **Mapped Native Models (Step 2)**:
-   - Contact Master: `res.partner`
-   - Product Master: `product.template` / `product.product`
-   - Chart of Accounts: `account.account`
-   - Journals: `account.journal`
-   - Journal Entries / Items: `account.move` / `account.move.line`
-   - Analytic Accounts: `account.analytic.account` / `account.analytic.line`
-   - Purchase Orders: `purchase.order`
-   - Sales Orders: `sale.order`
-   - Invoices / Vendor Bills: `account.move` (`out_invoice` / `in_invoice`)
-   - Payments: `account.payment`
-   - Portal Access: `base.group_portal` with native `account.move` record rule
-3. **Only Custom Model**: `uf.budget`
+Convert the Urban Furniture Accounting System into a **standalone, self-contained web application** built from scratch without Odoo.
 
 ---
 
-## User Review Required
+## 1. Technology Stack & Rationale
 
-> [!NOTE]
-> Environment inspection confirmed clean machine setup with Python 3.13. We will build the full, standard Odoo module structure for `urban_furniture_accounting` alongside a standalone end-to-end verification engine that executes the complete 17-step acceptance test suite against Odoo ORM business logic.
-
----
-
-## Proposed Changes
-
-### `urban_furniture_accounting` Module Core
-
-#### [NEW] [__manifest__.py](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/__manifest__.py)
-- Module descriptor depending on `base`, `contacts`, `sale`, `purchase`, `account`.
-- Includes data files, view files, and security access rules.
-
-#### [NEW] [__init__.py](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/__init__.py)
-- Imports `models`.
-
-#### [NEW] [models/__init__.py](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/models/__init__.py)
-- Imports `uf_budget`.
-
-#### [NEW] [models/uf_budget.py](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/models/uf_budget.py)
-- Defines model `uf.budget`:
-  - `budget_name` (Char, required)
-  - `period_start` (Date, required)
-  - `period_end` (Date, required)
-  - `responsible_user_id` (Many2one `res.users`, required)
-  - `analytic_account_id` (Many2one `account.analytic.account`, required)
-  - `planned_amount` (Monetary, required)
-  - `actual_amount` (Monetary, compute method, live calculation from posted `account.move.line` / `account.analytic.line` within `period_start` and `period_end`)
-  - `variance` (Monetary, compute `planned_amount - actual_amount`)
-  - `currency_id` (Many2one `res.currency`, default company currency)
-  - `state` (Selection: `draft`, `confirmed`, default `draft`)
-  - Python constraints: `@api.constrains('period_start', 'period_end')` enforcing `period_end >= period_start`, and `@api.constrains('planned_amount')` enforcing `planned_amount > 0`.
-
-#### [NEW] [security/ir.model.access.csv](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/security/ir.model.access.csv)
-- Grants full read/write/create/unlink access on `uf.budget` to `account.group_account_manager` (Admin).
-- Grants read/write/create access (no unlink) on `uf.budget` to `account.group_account_user` (Accountant).
-
-#### [NEW] [views/uf_budget_views.xml](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/views/uf_budget_views.xml)
-- Tree View: list of budgets with columns for Name, Analytic Account, Period Start, Period End, Planned Amount, Actual Amount, Variance, Responsible User, State.
-- Form View: organized form with budget details, header status bar (`draft`/`confirmed`), and financial metrics.
-- Pivot View ("Budget Report"): Pivot/Graph view groupable by Analytic Account, Period, Responsible Person showing Planned, Actual, and Variance metrics.
-- Search View: search and filter options.
-
-#### [NEW] [views/menu_views.xml](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/views/menu_views.xml)
-- Main menu: `Urban Furniture Accounting`.
-- Submenus: `Budgets` (tree/form view) and `Budget Report` (pivot view).
-
-#### [NEW] [data/demo_data.xml](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/data/demo_data.xml)
-- Seed data for:
-  - Vendor: "Rahul Sharma" / "Azure Furniture"
-  - Customer: "Nimesh Pathak"
-  - Products: "Wooden Chair", "Office Chair"
-  - Chart of Accounts & Journals (Sales, Purchase, Cash, Bank)
-  - Analytic Account & `uf.budget` record
-  - Complete Purchase Cycle (PO → Vendor Bill → Payment)
-  - Complete Sales Cycle (SO → Customer Invoice → Payment)
+- **Backend Framework**: **Python + Flask**
+  - *Why*: Python 3.13 is already installed on the machine. Flask is fast, lightweight, standard, and requires no heavy configuration.
+- **Database Engine**: **SQLite** (`urban_furniture.db`)
+  - *Why*: Native to Python (`import sqlite3`). Zero database server installation or setup required. Guarantees 100% reliable local database persistence.
+- **Frontend & UI Aesthetics**: **HTML5 + Vanilla CSS + JavaScript (Modern Dark/Glassmorphism Design System)**
+  - *Why*: Stunning, responsive, premium UI with clean cards, data tables, status badges, dynamic modals, and Chart.js financial visualizers.
+- **Authentication & Security**: Session-based auth with Role-Based Access Control (**Admin / Business Owner**, **Accountant**, **Customer Portal User**).
 
 ---
 
-### Verification & Testing Harness
+## 2. Directory & Architecture Plan
 
-#### [NEW] [tests/test_acceptance_flow.py](file:///d:/Urban Furniture Accounting System/urban_furniture_accounting/tests/test_acceptance_flow.py)
-- Complete automated end-to-end acceptance test runner executing all 17 step-by-step acceptance criteria listed in the problem statement prompt.
+We will clean up the old Odoo folder and establish the standalone application structure:
+
+```
+Urban Furniture Accounting System/
+├── app.py                      # Flask server application & route handlers
+├── database.py                 # SQLite connection, schema initialization & helper methods
+├── seed.py                     # Demo data seeder script
+├── requirements.txt            # Python dependencies (flask)
+├── static/
+│   ├── css/
+│   │   └── style.css           # Premium design system tokens & glassmorphic styling
+│   └── js/
+│       └── app.js              # Interactivity, modal handlers, chart visualizers
+└── templates/
+    ├── base.html               # Master layout with navigation bar & flash alerts
+    ├── login.html              # Role-selection & login screen
+    ├── dashboard.html          # Key metrics, overview graphs & quick actions
+    ├── master_data.html        # Contacts, Products, Accounts, Journals, Budgets
+    ├── purchase.html           # Purchase Orders & Vendor Bills workflow
+    ├── sales.html              # Sales Orders & Customer Invoices workflow
+    ├── accounting.html         # Journal Entries & Ledger balance audit
+    ├── reports.html            # P&L Report, Balance Sheet, Budget Report (Pivot)
+    └── portal.html             # Customer Portal (restricted invoice view & payment)
+```
 
 ---
 
-## Verification Plan
+## 3. Database Schema (SQLite)
 
-### Automated Tests
-1. Run the python acceptance test suite verifying all 17 steps:
-   - Product, Customer, Vendor creation
-   - PO creation, bill posting, payment registration, journal entry debit/credit verification
-   - SO creation, invoice posting, payment registration, journal entry debit/credit verification
-   - Financial report verification (Profit & Loss net profit, Balance Sheet asset/liability/equity balancing)
-   - Live `uf.budget` computation (Planned vs Actual vs Variance)
-   - Portal access restriction verification
+1. `users` (`id`, `username`, `password`, `role`, `partner_id`)
+2. `partners` (`id`, `name`, `email`, `partner_type`, `phone`, `address`)
+3. `products` (`id`, `name`, `type`, `sale_price`, `cost_price`)
+4. `accounts` (`id`, `code`, `name`, `account_type`)
+5. `journals` (`id`, `code`, `name`, `type`)
+6. `analytic_accounts` (`id`, `code`, `name`)
+7. `purchase_orders` (`id`, `vendor_id`, `order_date`, `total_amount`, `state`)
+8. `purchase_order_lines` (`id`, `po_id`, `product_id`, `qty`, `unit_price`, `subtotal`)
+9. `sales_orders` (`id`, `customer_id`, `order_date`, `total_amount`, `state`)
+10. `sales_order_lines` (`id`, `so_id`, `product_id`, `qty`, `unit_price`, `subtotal`)
+11. `invoices` (`id`, `move_type`, `partner_id`, `po_id`, `so_id`, `invoice_date`, `due_date`, `amount_total`, `amount_residual`, `state`)
+12. `invoice_lines` (`id`, `invoice_id`, `product_id`, `qty`, `unit_price`, `subtotal`, `analytic_account_id`)
+13. `journal_entries` (`id`, `entry_number`, `date`, `ref`, `move_type`, `invoice_id`, `state`)
+14. `journal_lines` (`id`, `entry_id`, `account_id`, `partner_id`, `analytic_account_id`, `debit`, `credit`, `description`)
+15. `payments` (`id`, `invoice_id`, `partner_id`, `payment_date`, `amount`, `journal_id`)
+16. `budgets` (`id`, `budget_name`, `period_start`, `period_end`, `responsible_user_id`, `analytic_account_id`, `planned_amount`, `state`)
 
-### Manual Verification
-1. Inspect generated module manifest, XML views, security rules, and models to confirm clean Odoo syntax and zero errors.
+---
+
+## 4. Key Workflows & Business Logic
+
+1. **Purchase Workflow**:
+   - Create PO $\rightarrow$ Confirm PO $\rightarrow$ Convert to Vendor Bill $\rightarrow$ Post Bill (Auto Journal Entry: Debit Purchase Expense, Credit Creditors) $\rightarrow$ Pay Bill via Bank (Auto Journal Entry: Debit Creditors, Credit Bank).
+2. **Sales Workflow**:
+   - Create SO $\rightarrow$ Confirm SO $\rightarrow$ Generate Customer Invoice $\rightarrow$ Post Invoice (Auto Journal Entry: Debit Debtors, Credit Sales Income) $\rightarrow$ Pay Invoice via Cash/Bank (Auto Journal Entry: Debit Cash/Bank, Credit Debtors).
+3. **Double-Entry Bookkeeping Engine**:
+   - Guarantees `sum(debit) == sum(credit)` for every posted entry.
+4. **Real Financial Reports**:
+   - **Profit & Loss**: `Sales Income - Purchase Expense = Net Profit`.
+   - **Balance Sheet**: `Total Assets (Cash/Bank + Debtors) = Total Liabilities (Creditors) + Total Equity (Capital + Net Profit)`.
+   - **Budget Report**: Live computed `actual_amount` from posted entries tagged with the analytic account within date range, `variance = planned_amount - actual_amount`.
+5. **Customer Portal**:
+   - Portal login for Nimesh Pathak (`customer_portal`).
+   - Displays ONLY invoices linked to customer's `partner_id`.
+   - Interactive payment registration directly against open invoice.
+   - Strictly blocks access to backend accounting, chart of accounts, budgets, and other customers' documents.
+
+---
+
+## 5. Verification Plan
+
+### Automated Verification
+- Python test suite (`test_app.py`) verifying all endpoints, DB persistence, double-entry validation, and portal security restrictions.
+
+### Live UI Verification
+- Launch server via `python app.py`.
+- Open browser at `http://localhost:5000` to test full end-to-end hackathon workflow across Admin, Accountant, and Customer Portal logins.

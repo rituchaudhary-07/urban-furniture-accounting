@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+
+{% block title %}Master Data — Urban Furniture Accounting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Master Data Management</h1>
+        <p>Manage Contacts, Products, Chart of Accounts, Journals, Budgets, and System Users</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="openModal('modal-partner')"><i class="fa-solid fa-user-plus"></i> Add Contact</button>
+        <button class="btn btn-primary" onclick="openModal('modal-product')"><i class="fa-solid fa-box-open"></i> Add Product</button>
+        <button class="btn btn-primary" onclick="openModal('modal-budget')"><i class="fa-solid fa-calculator"></i> Create Budget</button>
+        {% if session.get('role') == 'admin' %}
+        <button class="btn btn-success" onclick="openModal('modal-user')"><i class="fa-solid fa-user-shield"></i> Add System User</button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Section 1: Contacts & Products -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-address-book"></i> Contacts (Partners)</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in partners %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td><span class="badge badge-draft">{{ p.partner_type|upper }}</span></td>
+                    <td>{{ p.email }}</td>
+                    <td>{{ p.phone }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-boxes-stacked"></i> Product Catalog</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Sales Price</th>
+                    <th>Cost Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prod in products %}
+                <tr>
+                    <td><strong>{{ prod.name }}</strong></td>
+                    <td><span style="color: var(--success); font-weight: 600;">${{ "%.2f"|format(prod.sale_price) }}</span></td>
+                    <td><span style="color: var(--danger); font-weight: 600;">${{ "%.2f"|format(prod.cost_price) }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 2: Chart of Accounts & Budgets -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-list-ol"></i> Chart of Accounts</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Account Name</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ac in accounts %}
+                <tr>
+                    <td><strong style="color: var(--primary);">{{ ac.code }}</strong></td>
+                    <td>{{ ac.name }}</td>
+                    <td><span class="badge badge-posted">{{ ac.account_type }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-chart-pie"></i> Urban Furniture Budgets</span>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Budget Name</th>
+                    <th>Analytic Account</th>
+                    <th>Planned</th>
+                    <th>Actual</th>
+                    <th>Variance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in budgets %}
+                <tr>
+                    <td><strong>{{ b.budget_name }}</strong></td>
+                    <td>{{ b.analytic_name }}</td>
+                    <td>${{ "%.2f"|format(b.planned_amount) }}</td>
+                    <td><span style="color: var(--warning);">${{ "%.2f"|format(b.actual_amount) }}</span></td>
+                    <td><span style="color: var(--success);">${{ "%.2f"|format(b.variance) }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 3: System Users -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fa-solid fa-users-gear"></i> System User Accounts</span>
+        {% if session.get('role') == 'admin' %}
+        <button class="btn btn-sm btn-success" onclick="openModal('modal-user')"><i class="fa-solid fa-user-plus"></i> Create User</button>
+        {% endif %}
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Linked Partner</th>
+                <th>Created Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td><strong>{{ u.username }}</strong></td>
+                <td><span class="badge badge-posted">{{ u.role|upper }}</span></td>
+                <td>{{ u.partner_id or '-' }}</td>
+                <td>{{ u.created_at[:10] if u.created_at else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal 1: Create Partner -->
+<div class="modal-backdrop" id="modal-partner">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Contact</h3>
+            <button class="btn-close" onclick="closeModal('modal-partner')">&times;</button>
+        </div>
+        <form action="{{ url_for('master_data') }}" method="POST">
+            <input type="hidden" name="action_type" value="create_partner">
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Acme Corp" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Partner Type</label>
+                <select name="partner_type" class="form-control" required>
+                    <option value="customer">Customer</option>
+                    <option value="vendor">Vendor</option>
+                    <option value="both">Both</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control" placeholder="contact@domain.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="text" name="phone" class="form-control" placeholder="+91 9876543210">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Address</label>
+                <input type="text" name="address" class="form-control" placeholder="City, State">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Partner</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Create Product -->
+<div class="modal-backdrop" id="modal-product">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Product</h3>
+            <button class="btn-close" onclick="closeModal('modal-product')">&times;</button>
+        </div>
+        <form action="{{ url_for('master_data') }}" method="POST">
+            <input type="hidden" name="action_type" value="create_product">
+            <div class="form-group">
+                <label class="form-label">Product Name</label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Executive Desk" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Sales Price ($)</label>
+                <input type="number" step="0.01" name="sale_price" class="form-control" placeholder="199.99" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cost Price ($)</label>
+                <input type="number" step="0.01" name="cost_price" class="form-control" placeholder="100.00" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Product</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 3: Create Budget -->
+<div class="modal-backdrop" id="modal-budget">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create Budget Allocation</h3>
+            <button class="btn-close" onclick="closeModal('modal-budget')">&times;</button>
+        </div>
+        <form action="{{ url_for('master_data') }}" method="POST">
+            <input type="hidden" name="action_type" value="create_budget">
+            <div class="form-group">
+                <label class="form-label">Budget Name</label>
+                <input type="text" name="budget_name" class="form-control" placeholder="e.g. Q4 Furniture Budget" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Analytic Account</label>
+                <select name="analytic_account_id" class="form-control" required>
+                    {% for a in analytics %}
+                    <option value="{{ a.id }}">{{ a.name }} ({{ a.code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Period Start</label>
+                <input type="date" name="period_start" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Period End</label>
+                <input type="date" name="period_end" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Planned Amount ($)</label>
+                <input type="number" step="0.01" name="planned_amount" class="form-control" placeholder="5000.00" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Create Budget</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 4: Create User (Admin only) -->
+{% if session.get('role') == 'admin' %}
+<div class="modal-backdrop" id="modal-user">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create System User Account</h3>
+            <button class="btn-close" onclick="closeModal('modal-user')">&times;</button>
+        </div>
+        <form action="{{ url_for('master_data') }}" method="POST">
+            <input type="hidden" name="action_type" value="create_user">
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="e.g. john_doe" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter secure password" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-control" required>
+                    <option value="admin">Admin / Business Owner</option>
+                    <option value="accountant">Accountant</option>
+                    <option value="portal_customer">Customer Portal User</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Link to Contact (for Customer Portal users)</label>
+                <select name="partner_id" class="form-control">
+                    <option value="">None (Internal User)</option>
+                    {% for p in partners %}
+                    <option value="{{ p.id }}">{{ p.name }} ({{ p.partner_type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center;">Create User Account</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
